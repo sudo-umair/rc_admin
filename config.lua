@@ -58,7 +58,7 @@ Config.WeaponSpawner = {
     weaponPrefixes    = { 'weapon_' },          -- weapon_pistol, weapon_carbinerifle ...
     ammoPrefixes      = { 'ammo' },             -- ammo-9, ammo_rifle, ammo ...
     componentPrefixes = { 'component', 'at_' }, -- attachment/component items
-    armorPrefixes     = { 'armour', 'armor', 'bulletproof', 'kevlar' }, -- body armour items
+    armorPrefixes     = { 'armour', 'armor', 'kevlar' }, -- body armour items
 
     -- Weapons that never take ammo (melee / throwables). The ammo field is
     -- ignored for these. Compared in lowercase.

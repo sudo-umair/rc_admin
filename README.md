@@ -55,7 +55,7 @@ Items are classified by name prefix:
 weaponPrefixes    = { 'weapon_' }
 ammoPrefixes      = { 'ammo' }
 componentPrefixes = { 'component', 'at_' }
-armorPrefixes     = { 'armour', 'armor', 'bulletproof', 'kevlar' }
+armorPrefixes     = { 'armour', 'armor', 'kevlar' }
 ```
 
 If a list comes up empty in-game, adjust these prefixes to match your item
