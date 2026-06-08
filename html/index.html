@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Admin</title>
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="backdrop" data-close></div>
+
+        <div class="panel">
+            <!-- Sidebar: brand + module navigation (extensible) -->
+            <aside class="sidebar">
+                <div class="brand">
+                    <span class="brand-mark">RC</span>
+                    <div class="brand-text">
+                        <span class="brand-server">Royal City</span>
+                        <span class="brand-title">Admin Panel</span>
+                    </div>
+                </div>
+                <nav class="nav" id="nav"></nav>
+                <div class="sidebar-foot">
+                    <span id="roleBadge" class="role-badge">Admin</span>
+                    <button class="btn-close" data-close>Close</button>
+                </div>
+            </aside>
+
+            <!-- Main content (rendered per active module) -->
+            <main class="content" id="content"></main>
+        </div>
+    </div>
+
+    <!-- Modal host for give dialogs -->
+    <div id="modal" class="modal-host hidden">
+        <div class="modal-backdrop" data-modal-close></div>
+        <div class="modal" id="modalBody"></div>
+    </div>
+
+    <!-- Toasts -->
+    <div id="toasts" class="toasts"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
