@@ -22,7 +22,7 @@ Config.OpenKey = ''       -- optional keybind (e.g. 'F6'); '' = command only
 -----------------------------------------------------------------------------
 
 Config.AdminGroups    = { 'owner', 'developer', 'admin', 'superadmin' }
-Config.ElevatedGroups = { 'owner', 'developer', 'superadmin' }
+Config.ElevatedGroups = { 'owner', 'developer', 'admin', 'superadmin' }
 
 -----------------------------------------------------------------------------
 -- Logging (admin actions)
