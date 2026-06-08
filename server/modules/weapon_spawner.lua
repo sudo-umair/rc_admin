@@ -25,6 +25,17 @@ local function categorize(name)
     return CFG.categories[name] or CFG.defaultCategory
 end
 
+-- Resolve an item's image to an ox_inventory NUI path. Honours a custom
+-- client.image when set, otherwise falls back to the (lowercased) item name.
+local function imageFor(name, data)
+    local img = data and data.client and data.client.image
+    if img and img ~= '' then
+        if img:find('://') then return img end
+        return ('nui://ox_inventory/web/images/%s'):format(img)
+    end
+    return ('nui://ox_inventory/web/images/%s.png'):format(name:lower())
+end
+
 -----------------------------------------------------------------------------
 -- Catalog — built once from the ox_inventory item registry and cached.
 -- weapons:    { name, label, category, ammoname, takesAmmo }
@@ -51,15 +62,16 @@ local function buildCatalog()
                 category  = categorize(lname),
                 ammoname  = data and data.ammoname or nil,
                 takesAmmo = not inSet(lname, CFG.noAmmoWeapons),
+                image     = imageFor(name, data),
             }
             weapons[#weapons + 1] = entry
             weaponSet[name] = entry
         elseif startsWithAny(lname, CFG.ammoPrefixes) then
-            local entry = { name = name, label = label }
+            local entry = { name = name, label = label, image = imageFor(name, data) }
             ammo[#ammo + 1] = entry
             ammoSet[name] = entry
         elseif startsWithAny(lname, CFG.componentPrefixes) then
-            local entry = { name = name, label = label }
+            local entry = { name = name, label = label, image = imageFor(name, data) }
             components[#components + 1] = entry
             componentSet[name] = entry
         end

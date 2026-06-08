@@ -62,6 +62,10 @@ names. Weapons that take no ammo are listed in `Config.WeaponSpawner.noAmmoWeapo
 > Attachments are written to the weapon's `metadata.components`. ox_inventory
 > ignores any component that isn't valid for that weapon.
 
+Item images are pulled from ox_inventory (`nui://ox_inventory/web/images/<item>.png`,
+honouring a custom `client.image`). If an image is missing the thumbnail simply
+falls back to an empty slot — add the image to `ox_inventory/web/images` to fix it.
+
 Limits (quantity, ammo, durability, nearby radius) are enforced server-side via
 `Config.WeaponSpawner.limits`.
 

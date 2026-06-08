@@ -230,7 +230,10 @@
             filtered.forEach((it) => {
                 const card = el('div', 'card');
                 card.innerHTML =
-                    `<div class="card-info">
+                    `<div class="card-thumb">
+                        ${it.image ? `<img src="${esc(it.image)}" onerror="this.style.display='none'" />` : ''}
+                    </div>
+                    <div class="card-info">
                         <div class="card-label">${esc(it.label)}</div>
                         <div class="card-name">${esc(it.name)}</div>
                     </div>
@@ -273,8 +276,10 @@
 
         const m = el('div');
         m.innerHTML = `
-            <h2>${esc(weapon.label)}</h2>
-            <div class="sub">${esc(weapon.name)}</div>
+            <div class="modal-head">
+                <div class="modal-thumb">${weapon.image ? `<img src="${esc(weapon.image)}" onerror="this.style.display='none'" />` : ''}</div>
+                <div><h2>${esc(weapon.label)}</h2><div class="sub">${esc(weapon.name)}</div></div>
+            </div>
             <div class="field">
                 <label>Quantity</label>
                 <input type="number" id="m_qty" value="${defaults.quantity || 1}" min="${qLim.min}" max="${qLim.max}">
@@ -353,8 +358,10 @@
         const aLim = (limits && limits.ammo) || { min: 0, max: 9999 };
         const m = el('div');
         m.innerHTML = `
-            <h2>${esc(ammo.label)}</h2>
-            <div class="sub">${esc(ammo.name)}</div>
+            <div class="modal-head">
+                <div class="modal-thumb">${ammo.image ? `<img src="${esc(ammo.image)}" onerror="this.style.display='none'" />` : ''}</div>
+                <div><h2>${esc(ammo.label)}</h2><div class="sub">${esc(ammo.name)}</div></div>
+            </div>
             <div class="field">
                 <label>Amount</label>
                 <input type="number" id="a_amt" value="${defaults.ammo || 0}" min="1" max="${aLim.max}">
