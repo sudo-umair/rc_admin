@@ -133,3 +133,38 @@ end, false)
 RegisterNetEvent('rc_admin:requestOpen', function()
     openFor(source)
 end)
+
+-----------------------------------------------------------------------------
+-- /checkgroup [id] — read-only lookup of a player's ESX group.
+-- From the server console: `checkgroup <id>` (prints the result).
+-- In-game: admins only; omit the id to check yourself.
+-----------------------------------------------------------------------------
+
+RegisterCommand('checkgroup', function(source, args)
+    local id = tonumber(args[1])
+
+    if source == 0 then   -- server console
+        if not id then
+            print('[rc_admin] usage: checkgroup <server id>')
+            return
+        end
+        local xPlayer = ESX.GetPlayerFromId(id)
+        print(('[rc_admin] [%d] group = %s'):format(id, xPlayer and xPlayer.getGroup() or 'not found / offline'))
+        return
+    end
+
+    if not Admin.isAdmin(source) then
+        Admin.notify(source, 'You are not authorized to use this.', 'error')
+        return
+    end
+
+    id = id or source
+    local xPlayer = ESX.GetPlayerFromId(id)
+    if not xPlayer then
+        Admin.notify(source, ('No online player with ID %s.'):format(id), 'error', 'Check Group')
+        return
+    end
+    Admin.notify(source,
+        ('[%d] %s — group: %s'):format(id, xPlayer.getName(), xPlayer.getGroup()),
+        'inform', 'Check Group')
+end, false)
