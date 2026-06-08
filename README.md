@@ -1,4 +1,4 @@
-# rc_admin
+# rc_admin_menu
 
 A modular, admin-only toolkit for ESX Legacy with a custom NUI panel. Features
 are built as self-contained **modules** so new tools can be added without
@@ -94,7 +94,7 @@ Every grant is recorded (`Config.Logging`):
    })
    ```
 
-   Add any actions as `lib.callback.register('rc_admin:...')` and guard them
+   Add any actions as `lib.callback.register('rc_admin_menu:...')` and guard them
    with `Admin.isAdmin(src)` / `Admin.isElevated(src)`.
 
 2. **Client** — create `client/modules/<name>.lua` with `RegisterNUICallback`s

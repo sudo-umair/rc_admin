@@ -1,7 +1,7 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'rc_admin'
+name 'rc_admin_menu'
 description 'ESX modular admin toolkit — a central admin menu with pluggable feature modules. First module: weapon/ammo/attachment spawner (ox_inventory).'
 author 'sudo-umair'
 version '1.0.0'

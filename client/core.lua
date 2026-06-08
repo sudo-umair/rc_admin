@@ -7,7 +7,7 @@ local isOpen = false
 local function open()
     if isOpen then return end
 
-    local ctx = lib.callback.await('rc_admin:getContext', false)
+    local ctx = lib.callback.await('rc_admin_menu:getContext', false)
     if not ctx then
         lib.notify({ title = 'Admin', description = 'Not authorized.', type = 'error' })
         return
@@ -25,7 +25,7 @@ local function close()
     SendNUIMessage({ action = 'close' })
 end
 
-RegisterNetEvent('rc_admin:open', open)
+RegisterNetEvent('rc_admin_menu:open', open)
 
 RegisterNUICallback('close', function(_, cb)
     close()
@@ -34,7 +34,7 @@ end)
 
 -- Generic: resolve a server ID to a player name (shared by feature modules).
 RegisterNUICallback('resolvePlayer', function(data, cb)
-    cb(lib.callback.await('rc_admin:resolvePlayer', false, data and data.id) or false)
+    cb(lib.callback.await('rc_admin_menu:resolvePlayer', false, data and data.id) or false)
 end)
 
 -- Shared toast helper so feature modules can surface results from the NUI.
@@ -48,11 +48,11 @@ end
 
 if Config.OpenKey and Config.OpenKey ~= '' then
     lib.addKeybind({
-        name        = 'rc_admin_open',
+        name        = 'rc_admin_menu_open',
         description = 'Open admin menu',
         defaultKey  = Config.OpenKey,
         onPressed   = function()
-            if isOpen then close() else TriggerServerEvent('rc_admin:requestOpen') end
+            if isOpen then close() else TriggerServerEvent('rc_admin_menu:requestOpen') end
         end,
     })
 end

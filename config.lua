@@ -32,7 +32,7 @@ Config.ElevatedGroups = { 'admin', 'developer' }
 Config.Logging = {
     console = true,                 -- print to the server console
     webhook = '',                   -- Discord webhook URL ('' disables Discord logging)
-    botName = 'rc_admin',
+    botName = 'rc_admin_menu',
     avatar  = '',                   -- optional Discord avatar URL
     color   = 3447003,              -- embed colour (blue)
 }

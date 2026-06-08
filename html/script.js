@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'rc_admin';
+    const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'rc_admin_menu';
 
     async function post(name, data) {
         try {

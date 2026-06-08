@@ -51,7 +51,7 @@ function Admin.log(action, adminSrc, description, fields)
     local adminName = adminSrc and adminSrc ~= 0 and GetPlayerName(adminSrc) or 'CONSOLE'
 
     if Config.Logging.console then
-        print(('[rc_admin] %s | by %s (id %s) | %s')
+        print(('[rc_admin_menu] %s | by %s (id %s) | %s')
             :format(action, adminName, adminSrc or 0, description or ''))
     end
 
@@ -90,7 +90,7 @@ function Admin.registerModule(def)
 end
 
 -- Returns the full context the NUI needs to render for this admin.
-lib.callback.register('rc_admin:getContext', function(src)
+lib.callback.register('rc_admin_menu:getContext', function(src)
     if not Admin.isAdmin(src) then return false end
 
     local elevated = Admin.isElevated(src)
@@ -120,7 +120,7 @@ local function openFor(src)
         Admin.notify(src, 'You are not authorized to use this.', 'error')
         return
     end
-    TriggerClientEvent('rc_admin:open', src)
+    TriggerClientEvent('rc_admin_menu:open', src)
 end
 
 RegisterCommand(Config.Command, function(source)
@@ -130,21 +130,15 @@ end, false)
 
 -- Keybinds fire a client command that we relay here so the group check stays
 -- server-authoritative.
-RegisterNetEvent('rc_admin:requestOpen', function()
+RegisterNetEvent('rc_admin_menu:requestOpen', function()
     openFor(source)
 end)
-
------------------------------------------------------------------------------
--- /checkgroup [id] — read-only lookup of a player's ESX group.
--- From the server console: `checkgroup <id>` (prints the result).
--- In-game: admins only; omit the id to check yourself.
------------------------------------------------------------------------------
 
 -----------------------------------------------------------------------------
 -- Resolve a server ID to a player name (shared by modules' "Player by ID" field)
 -----------------------------------------------------------------------------
 
-lib.callback.register('rc_admin:resolvePlayer', function(src, id)
+lib.callback.register('rc_admin_menu:resolvePlayer', function(src, id)
     if not Admin.isAdmin(src) then return false end
     id = tonumber(id)
     if not id then return false end
@@ -153,16 +147,22 @@ lib.callback.register('rc_admin:resolvePlayer', function(src, id)
     return { id = id, name = xPlayer.getName(), account = GetPlayerName(id) }
 end)
 
+-----------------------------------------------------------------------------
+-- /checkgroup [id] — read-only lookup of a player's ESX group.
+-- From the server console: `checkgroup <id>` (prints the result).
+-- In-game: admins only; omit the id to check yourself.
+-----------------------------------------------------------------------------
+
 RegisterCommand('checkgroup', function(source, args)
     local id = tonumber(args[1])
 
     if source == 0 then   -- server console
         if not id then
-            print('[rc_admin] usage: checkgroup <server id>')
+            print('[rc_admin_menu] usage: checkgroup <server id>')
             return
         end
         local xPlayer = ESX.GetPlayerFromId(id)
-        print(('[rc_admin] [%d] group = %s'):format(id, xPlayer and xPlayer.getGroup() or 'not found / offline'))
+        print(('[rc_admin_menu] [%d] group = %s'):format(id, xPlayer and xPlayer.getGroup() or 'not found / offline'))
         return
     end
 

@@ -40,7 +40,7 @@ local function buildCatalog()
     catalog = { jobs = list }
 
     if Config.Debug then
-        print(('[rc_admin] job catalog: %d jobs'):format(#list))
+        print(('[rc_admin_menu] job catalog: %d jobs'):format(#list))
     end
 end
 
@@ -142,7 +142,7 @@ end
 -- Set job
 -----------------------------------------------------------------------------
 
-lib.callback.register('rc_admin:jobs:set', function(src, payload)
+lib.callback.register('rc_admin_menu:jobs:set', function(src, payload)
     if not Admin.isAdmin(src) then return { success = false, message = 'Not authorized.' } end
     if type(payload) ~= 'table' then return { success = false, message = 'Bad request.' } end
 

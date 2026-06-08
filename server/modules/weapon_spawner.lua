@@ -95,7 +95,7 @@ local function buildCatalog()
     catalog = { weapons = weapons, ammo = ammo, components = components, categories = categories }
 
     if Config.Debug then
-        print(('[rc_admin] weapon catalog: %d weapons, %d ammo, %d components')
+        print(('[rc_admin_menu] weapon catalog: %d weapons, %d ammo, %d components')
             :format(#weapons, #ammo, #components))
     end
 end
@@ -206,7 +206,7 @@ end
 -- Give weapon
 -----------------------------------------------------------------------------
 
-lib.callback.register('rc_admin:weapons:give', function(src, payload)
+lib.callback.register('rc_admin_menu:weapons:give', function(src, payload)
     if not Admin.isAdmin(src) then return { success = false, message = 'Not authorized.' } end
     if type(payload) ~= 'table' then return { success = false, message = 'Bad request.' } end
 
@@ -282,7 +282,7 @@ end)
 -- Give ammo (standalone ammo item)
 -----------------------------------------------------------------------------
 
-lib.callback.register('rc_admin:weapons:giveAmmo', function(src, payload)
+lib.callback.register('rc_admin_menu:weapons:giveAmmo', function(src, payload)
     if not Admin.isAdmin(src) then return { success = false, message = 'Not authorized.' } end
     if type(payload) ~= 'table' then return { success = false, message = 'Bad request.' } end
 
