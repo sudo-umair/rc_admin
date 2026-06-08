@@ -12,7 +12,7 @@ touching the existing ones. The first module is a **Weapon Spawner**.
 
 ## Opening the panel
 
-- Command: `/admin`
+- Command: `/adminmenu`
 - Optional keybind: set `Config.OpenKey` (e.g. `'F6'`); players can rebind it
   under **Settings → Key Bindings → FiveM**.
 

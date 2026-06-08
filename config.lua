@@ -7,7 +7,7 @@ Config = {}
 Config.Debug = false      -- print diagnostics to server & client (F8) consoles
 
 -- How the admin hub is opened.
-Config.Command = 'admin'  -- chat command, e.g. /admin
+Config.Command = 'adminmenu'  -- chat command, e.g. /adminmenu
 Config.OpenKey = ''       -- optional keybind (e.g. 'F6'); '' = command only
                           -- players can rebind it under Settings > Key Bindings > FiveM
 
