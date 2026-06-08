@@ -362,6 +362,17 @@ html, body {
 }
 .field input:focus { border-color: var(--accent-25); }
 
+.select {
+    width: 100%;
+    font: inherit; font-size: 14px; color: var(--primary);
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-sm); padding: 10px 12px; outline: none;
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+.select:focus { border-color: var(--accent-25); }
+.select option { background: var(--bg-solid); color: var(--primary); }
+
 .range-row { display: flex; align-items: center; gap: 12px; }
 .range-row input[type="range"] { flex: 1; accent-color: var(--accent); }
 .range-val { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 44px; text-align: right; }

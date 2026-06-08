@@ -32,6 +32,11 @@ RegisterNUICallback('close', function(_, cb)
     cb('ok')
 end)
 
+-- Generic: resolve a server ID to a player name (shared by feature modules).
+RegisterNUICallback('resolvePlayer', function(data, cb)
+    cb(lib.callback.await('rc_admin:resolvePlayer', false, data and data.id) or false)
+end)
+
 -- Shared toast helper so feature modules can surface results from the NUI.
 function AdminToast(kind, message)
     SendNUIMessage({ action = 'toast', data = { type = kind, message = message } })

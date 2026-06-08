@@ -140,6 +140,19 @@ end)
 -- In-game: admins only; omit the id to check yourself.
 -----------------------------------------------------------------------------
 
+-----------------------------------------------------------------------------
+-- Resolve a server ID to a player name (shared by modules' "Player by ID" field)
+-----------------------------------------------------------------------------
+
+lib.callback.register('rc_admin:resolvePlayer', function(src, id)
+    if not Admin.isAdmin(src) then return false end
+    id = tonumber(id)
+    if not id then return false end
+    local xPlayer = ESX.GetPlayerFromId(id)
+    if not xPlayer then return false end
+    return { id = id, name = xPlayer.getName(), account = GetPlayerName(id) }
+end)
+
 RegisterCommand('checkgroup', function(source, args)
     local id = tonumber(args[1])
 

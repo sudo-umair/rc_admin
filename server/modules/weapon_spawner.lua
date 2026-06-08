@@ -329,16 +329,3 @@ lib.callback.register('rc_admin:weapons:giveAmmo', function(src, payload)
         message = ('Gave %dx %s to %s.'):format(amount, ammoItem.label, describeTarget(payload.target, #targets)),
     }
 end)
-
------------------------------------------------------------------------------
--- Resolve a server ID to a player name (for the "Player by ID" target field)
------------------------------------------------------------------------------
-
-lib.callback.register('rc_admin:resolvePlayer', function(src, id)
-    if not Admin.isAdmin(src) then return false end
-    id = tonumber(id)
-    if not id then return false end
-    local xPlayer = ESX.GetPlayerFromId(id)
-    if not xPlayer then return false end
-    return { id = id, name = xPlayer.getName(), account = GetPlayerName(id) }
-end)

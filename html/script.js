@@ -89,25 +89,16 @@
     // Renderers keyed by module id — add new modules here as they ship.
     const RENDERERS = {};
 
-    // ======================= weapon spawner module =======================
+    // Shared target selector (Myself / Player ID / Nearby / Everyone) used by
+    // every module. Manages state.target and appends the bar to `body`.
+    // opts: { label?: string, radius?: number (default for nearby) }
+    function buildTargetBar(body, opts) {
+        opts = opts || {};
+        const defRadius = opts.radius || 20;
+        if (!state.target.radius) state.target.radius = defRadius;
 
-    RENDERERS.weapon_spawner = function (root, mod) {
-        const data = mod.data || {};
-        const limits = data.limits || {};
-        const defaults = data.defaults || {};
-        state.target.radius = defaults.radius || 20;
-
-        // header
-        const head = el('div', 'content-head');
-        head.innerHTML = `<h1>Weapon Spawner</h1><p>Give weapons, ammo &amp; attachments to players.</p>`;
-        root.appendChild(head);
-
-        const body = el('div', 'content-body');
-        root.appendChild(body);
-
-        // ---- target bar ----
         const bar = el('div', 'target-bar');
-        bar.appendChild(el('span', 'tb-label', 'Give to'));
+        bar.appendChild(el('span', 'tb-label', opts.label || 'Apply to'));
 
         const seg = el('div', 'seg');
         const modes = [
@@ -148,7 +139,7 @@
                 inp.type = 'number'; inp.placeholder = 'Radius (m)'; inp.style.width = '120px';
                 inp.className = 'search'; inp.style.padding = '7px 10px';
                 inp.value = state.target.radius;
-                inp.oninput = () => { state.target.radius = parseInt(inp.value, 10) || defaults.radius || 20; };
+                inp.oninput = () => { state.target.radius = parseInt(inp.value, 10) || defRadius; };
                 extra.appendChild(inp);
                 extra.appendChild(el('span', 'target-name', 'metres'));
             }
@@ -169,6 +160,25 @@
         bar.appendChild(extra);
         body.appendChild(bar);
         refreshExtra();
+    }
+
+    // ======================= weapon spawner module =======================
+
+    RENDERERS.weapon_spawner = function (root, mod) {
+        const data = mod.data || {};
+        const limits = data.limits || {};
+        const defaults = data.defaults || {};
+        state.target.radius = defaults.radius || 20;
+
+        // header
+        const head = el('div', 'content-head');
+        head.innerHTML = `<h1>Weapon Spawner</h1><p>Give weapons, ammo &amp; attachments to players.</p>`;
+        root.appendChild(head);
+
+        const body = el('div', 'content-body');
+        root.appendChild(body);
+
+        buildTargetBar(body, { label: 'Give to', radius: defaults.radius || 20 });
 
         // ---- tabs ----
         const tabs = el('div', 'tabs');
@@ -247,6 +257,99 @@
 
         renderList();
     };
+
+    // ============================ job setter module ============================
+
+    RENDERERS.job_setter = function (root, mod) {
+        const data = mod.data || {};
+        const jobs = data.jobs || [];
+        const radiusCfg = data.radius || {};
+        state.target.radius = radiusCfg.default || 20;
+
+        const head = el('div', 'content-head');
+        head.innerHTML = `<h1>Set Job</h1><p>Assign an ESX job &amp; grade to players.</p>`;
+        root.appendChild(head);
+
+        const body = el('div', 'content-body');
+        root.appendChild(body);
+
+        buildTargetBar(body, { label: 'Set for', radius: radiusCfg.default || 20 });
+
+        // ---- toolbar (search) ----
+        const toolbar = el('div', 'toolbar');
+        const search = el('input', 'search');
+        search.type = 'text';
+        search.placeholder = 'Search jobs…';
+        let query = '';
+        search.oninput = () => { query = search.value.toLowerCase(); renderList(); };
+        toolbar.appendChild(search);
+        body.appendChild(toolbar);
+
+        // ---- list ----
+        const grid = el('div', 'grid');
+        body.appendChild(grid);
+
+        function renderList() {
+            grid.innerHTML = '';
+            const filtered = jobs.filter((j) => !query ||
+                (j.label || '').toLowerCase().includes(query) ||
+                (j.name || '').toLowerCase().includes(query));
+
+            if (!filtered.length) {
+                grid.appendChild(el('div', 'empty', 'No jobs found.'));
+                return;
+            }
+
+            filtered.forEach((j) => {
+                const n = (j.grades || []).length;
+                const card = el('div', 'card');
+                card.innerHTML =
+                    `<div class="card-info">
+                        <div class="card-label">${esc(j.label)}</div>
+                        <div class="card-name">${esc(j.name)} · ${n} grade${n === 1 ? '' : 's'}</div>
+                    </div>
+                    <span class="card-give">+</span>`;
+                card.onclick = () => openJobModal(j);
+                grid.appendChild(card);
+            });
+        }
+
+        renderList();
+    };
+
+    function openJobModal(job) {
+        if (!validateTarget()) return;
+        const grades = job.grades || [];
+        const opts = grades.map((g) => {
+            const salary = (g.salary != null) ? ` ($${esc(String(g.salary))})` : '';
+            return `<option value="${esc(String(g.grade))}">${esc(String(g.grade))} — ${esc(g.label)}${salary}</option>`;
+        }).join('');
+
+        const m = el('div');
+        m.innerHTML = `
+            <div class="modal-head">
+                <div><h2>${esc(job.label)}</h2><div class="sub">${esc(job.name)}</div></div>
+            </div>
+            <div class="field">
+                <label>Grade</label>
+                <select id="j_grade" class="select">${opts || '<option value="0">0</option>'}</select>
+            </div>`;
+
+        const actions = el('div', 'modal-actions');
+        const cancel = el('button', 'btn btn-ghost', 'Cancel');
+        cancel.onclick = closeModal;
+        const setBtn = el('button', 'btn btn-primary', 'Set Job');
+        setBtn.onclick = async () => {
+            setBtn.disabled = true;
+            const grade = parseInt($('#j_grade', m).value, 10) || 0;
+            const r = await post('jobs:set', { target: targetPayload(), job: job.name, grade });
+            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
+            else { toast('error', (r && r.message) || 'Failed.'); setBtn.disabled = false; }
+        };
+        actions.appendChild(cancel); actions.appendChild(setBtn);
+        m.appendChild(actions);
+        showModal(m);
+    }
 
     // ----------------------- give weapon modal -----------------------
 

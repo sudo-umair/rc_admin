@@ -41,6 +41,14 @@ Config.Logging = {
 -- Weapon Spawner module
 -----------------------------------------------------------------------------
 
+Config.JobSetter = {
+    enabled = true,
+
+    -- "Nearby" target radius limits/default (metres). Setting jobs for nearby
+    -- or everyone online is gated to Config.ElevatedGroups.
+    radius = { min = 1, max = 100, default = 20 },
+}
+
 Config.WeaponSpawner = {
     enabled = true,
 
