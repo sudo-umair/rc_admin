@@ -21,8 +21,8 @@ Config.OpenKey = ''       -- optional keybind (e.g. 'F6'); '' = command only
 --                  (give to EVERYONE online, give to NEARBY players).
 -----------------------------------------------------------------------------
 
-Config.AdminGroups    = { 'owner', 'developer', 'admin', 'superadmin' }
-Config.ElevatedGroups = { 'owner', 'developer', 'admin', 'superadmin' }
+Config.AdminGroups    = { 'admin', 'developer' }
+Config.ElevatedGroups = { 'admin', 'developer' }
 
 -----------------------------------------------------------------------------
 -- Logging (admin actions)

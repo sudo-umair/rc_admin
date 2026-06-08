@@ -31,8 +31,8 @@ and every action — the client never decides who is an admin.
 Defaults (edit in `config.lua`):
 
 ```lua
-Config.AdminGroups    = { 'owner', 'developer', 'admin', 'superadmin' }
-Config.ElevatedGroups = { 'owner', 'developer', 'superadmin' }
+Config.AdminGroups    = { 'admin', 'developer' }
+Config.ElevatedGroups = { 'admin', 'developer' }
 ```
 
 ---
