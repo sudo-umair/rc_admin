@@ -44,12 +44,12 @@ end
 -----------------------------------------------------------------------------
 
 local catalog
-local weaponSet, ammoSet, componentSet   -- name -> entry, for fast validation
+local weaponSet, ammoSet, componentSet, armorSet   -- name -> entry, for fast validation
 
 local function buildCatalog()
     local items = exports.ox_inventory:Items()
-    local weapons, ammo, components = {}, {}, {}
-    weaponSet, ammoSet, componentSet = {}, {}, {}
+    local weapons, ammo, components, armor = {}, {}, {}, {}
+    weaponSet, ammoSet, componentSet, armorSet = {}, {}, {}, {}
 
     for name, data in pairs(items) do
         local lname = name:lower()
@@ -74,6 +74,10 @@ local function buildCatalog()
             local entry = { name = name, label = label, image = imageFor(name, data) }
             components[#components + 1] = entry
             componentSet[name] = entry
+        elseif CFG.armorPrefixes and startsWithAny(lname, CFG.armorPrefixes) then
+            local entry = { name = name, label = label, image = imageFor(name, data) }
+            armor[#armor + 1] = entry
+            armorSet[name] = entry
         end
     end
 
@@ -81,6 +85,7 @@ local function buildCatalog()
     table.sort(weapons, byLabel)
     table.sort(ammo, byLabel)
     table.sort(components, byLabel)
+    table.sort(armor, byLabel)
 
     -- ordered, de-duplicated category list for the NUI filter chips
     local seen, categories = {}, {}
@@ -92,11 +97,11 @@ local function buildCatalog()
     end
     table.sort(categories)
 
-    catalog = { weapons = weapons, ammo = ammo, components = components, categories = categories }
+    catalog = { weapons = weapons, ammo = ammo, components = components, armor = armor, categories = categories }
 
     if Config.Debug then
-        print(('[rc_admin_menu] weapon catalog: %d weapons, %d ammo, %d components')
-            :format(#weapons, #ammo, #components))
+        print(('[rc_admin_menu] weapon catalog: %d weapons, %d ammo, %d components, %d armor')
+            :format(#weapons, #ammo, #components, #armor))
     end
 end
 
@@ -125,6 +130,7 @@ Admin.registerModule({
             weapons    = c.weapons,
             ammo       = c.ammo,
             components = c.components,
+            armor      = c.armor,
             categories = c.categories,
             limits     = CFG.limits,
             defaults   = CFG.defaults,
@@ -327,5 +333,57 @@ lib.callback.register('rc_admin_menu:weapons:giveAmmo', function(src, payload)
     return {
         success = true,
         message = ('Gave %dx %s to %s.'):format(amount, ammoItem.label, describeTarget(payload.target, #targets)),
+    }
+end)
+
+-----------------------------------------------------------------------------
+-- Give armor (body-armour item from ox_inventory)
+-----------------------------------------------------------------------------
+
+lib.callback.register('rc_admin_menu:weapons:giveArmor', function(src, payload)
+    if not Admin.isAdmin(src) then return { success = false, message = 'Not authorized.' } end
+    if type(payload) ~= 'table' then return { success = false, message = 'Bad request.' } end
+
+    getCatalog()
+    local armorItem = armorSet[payload.armor]
+    if not armorItem then return { success = false, message = 'Unknown armor item.' } end
+
+    local amount = clamp(payload.amount, CFG.limits.quantity, CFG.defaults.quantity)
+    if amount <= 0 then return { success = false, message = 'Amount must be greater than zero.' } end
+
+    local targets, err = resolveTargets(src, payload.target)
+    if not targets then return { success = false, message = err } end
+    if #targets == 0 then return { success = false, message = 'No valid targets.' } end
+
+    local given, failed = 0, 0
+    for _, targetSrc in ipairs(targets) do
+        local ok = false
+        if exports.ox_inventory:CanCarryItem(targetSrc, armorItem.name, amount) then
+            local success, added = pcall(function()
+                return exports.ox_inventory:AddItem(targetSrc, armorItem.name, amount)
+            end)
+            ok = success and added ~= false
+        end
+        if ok then
+            given = given + 1
+            if targetSrc ~= src then
+                Admin.notify(targetSrc, ('You received %dx %s from an admin.')
+                    :format(amount, armorItem.label), 'success')
+            end
+        else
+            failed = failed + 1
+        end
+    end
+
+    Admin.log('Armor Spawned', src,
+        ('Gave %dx %s to %s — %d ok, %d failed')
+        :format(amount, armorItem.label, describeTarget(payload.target, #targets), given, failed))
+
+    if given == 0 then
+        return { success = false, message = 'Could not give armor (inventory full?).' }
+    end
+    return {
+        success = true,
+        message = ('Gave %dx %s to %s.'):format(amount, armorItem.label, describeTarget(payload.target, #targets)),
     }
 end)

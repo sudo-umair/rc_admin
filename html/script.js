@@ -182,7 +182,7 @@
 
         // ---- tabs ----
         const tabs = el('div', 'tabs');
-        [['weapons', 'Weapons'], ['ammo', 'Ammo']].forEach(([id, label]) => {
+        [['weapons', 'Weapons'], ['ammo', 'Ammo'], ['armor', 'Armor']].forEach(([id, label]) => {
             const t = el('button', 'tab' + (state.tab === id ? ' active' : ''), label);
             t.onclick = () => { state.tab = id; state.search = ''; renderList(); refreshTabs(); };
             t.dataset.tab = id;
@@ -224,7 +224,9 @@
         function renderList() {
             renderChips();
             grid.innerHTML = '';
-            const items = (state.tab === 'weapons' ? data.weapons : data.ammo) || [];
+            const items = (state.tab === 'weapons' ? data.weapons
+                : state.tab === 'ammo' ? data.ammo
+                : data.armor) || [];
             const filtered = items.filter((it) => {
                 if (state.tab === 'weapons' && state.category !== 'All' && it.category !== state.category) return false;
                 if (!state.search) return true;
@@ -248,9 +250,11 @@
                         <div class="card-name">${esc(it.name)}</div>
                     </div>
                     <span class="card-give">+</span>`;
-                card.onclick = () => (state.tab === 'weapons')
-                    ? openWeaponModal(it, data, limits, defaults)
-                    : openAmmoModal(it, limits, defaults);
+                card.onclick = () => {
+                    if (state.tab === 'weapons') openWeaponModal(it, data, limits, defaults);
+                    else if (state.tab === 'ammo') openAmmoModal(it, limits, defaults);
+                    else openArmorModal(it, limits, defaults);
+                };
                 grid.appendChild(card);
             });
         }
@@ -479,6 +483,40 @@
                 target: targetPayload(),
                 ammo: ammo.name,
                 amount: parseInt($('#a_amt', m).value, 10) || 0,
+            });
+            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
+            else { toast('error', (r && r.message) || 'Failed.'); give.disabled = false; }
+        };
+        actions.appendChild(cancel); actions.appendChild(give);
+        m.appendChild(actions);
+        showModal(m);
+    }
+
+    // ----------------------- give armor modal -----------------------
+
+    function openArmorModal(armor, limits, defaults) {
+        if (!validateTarget()) return;
+        const qLim = (limits && limits.quantity) || { min: 1, max: 10 };
+        const m = el('div');
+        m.innerHTML = `
+            <div class="modal-head">
+                <div class="modal-thumb">${armor.image ? `<img src="${esc(armor.image)}" onerror="this.style.display='none'" />` : ''}</div>
+                <div><h2>${esc(armor.label)}</h2><div class="sub">${esc(armor.name)}</div></div>
+            </div>
+            <div class="field">
+                <label>Quantity</label>
+                <input type="number" id="ar_qty" value="${defaults.quantity || 1}" min="${qLim.min}" max="${qLim.max}">
+            </div>`;
+        const actions = el('div', 'modal-actions');
+        const cancel = el('button', 'btn btn-ghost', 'Cancel');
+        cancel.onclick = closeModal;
+        const give = el('button', 'btn btn-primary', 'Give Armor');
+        give.onclick = async () => {
+            give.disabled = true;
+            const r = await post('weapons:giveArmor', {
+                target: targetPayload(),
+                armor: armor.name,
+                amount: parseInt($('#ar_qty', m).value, 10) || 1,
             });
             if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
             else { toast('error', (r && r.message) || 'Failed.'); give.disabled = false; }

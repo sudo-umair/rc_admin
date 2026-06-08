@@ -40,20 +40,22 @@ Config.ElevatedGroups = { 'admin', 'developer' }
 ## Weapon Spawner
 
 1. Pick a **target**: Myself · Player ID · Nearby (elevated) · Everyone (elevated).
-2. Choose the **Weapons** or **Ammo** tab, search / filter by category.
+2. Choose the **Weapons**, **Ammo** or **Armor** tab, search / filter by category.
 3. Click an item to open the give dialog:
    - **Weapons** — quantity, ammo (skipped for melee/throwables), durability,
      and optional attachments (multi-select).
    - **Ammo** — amount of the selected ammo item.
+   - **Armor** — quantity of the selected body-armour item.
 
 The catalog is built automatically from the **ox_inventory item registry**, so
-it always reflects the weapons/ammo/attachments your server actually has. Items
-are classified by name prefix:
+it always reflects the weapons/ammo/attachments/armor your server actually has.
+Items are classified by name prefix:
 
 ```lua
 weaponPrefixes    = { 'weapon_' }
 ammoPrefixes      = { 'ammo' }
 componentPrefixes = { 'component', 'at_' }
+armorPrefixes     = { 'armour', 'armor', 'bulletproof', 'kevlar' }
 ```
 
 If a list comes up empty in-game, adjust these prefixes to match your item
