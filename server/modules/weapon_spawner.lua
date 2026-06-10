@@ -139,76 +139,6 @@ Admin.registerModule({
 })
 
 -----------------------------------------------------------------------------
--- Targeting — resolve a target descriptor into a list of player sources.
--- target = { mode = 'self'|'id'|'nearby'|'everyone', id = number, radius = number }
--- Returns (sources[], errorMessage).
------------------------------------------------------------------------------
-
-local function clamp(v, lim, fallback)
-    v = tonumber(v)
-    if not v then return fallback end
-    if v < lim.min then return lim.min end
-    if v > lim.max then return lim.max end
-    return v
-end
-
-local function resolveTargets(adminSrc, target)
-    local mode = target and target.mode or 'self'
-
-    if mode == 'self' then
-        return { adminSrc }
-    end
-
-    if mode == 'id' then
-        local id = tonumber(target.id)
-        if not id then return nil, 'Invalid server ID.' end
-        if not ESX.GetPlayerFromId(id) then
-            return nil, ('No online player with server ID %s.'):format(id)
-        end
-        return { id }
-    end
-
-    -- elevated-only modes
-    if not Admin.isElevated(adminSrc) then
-        return nil, 'You are not authorized for that target.'
-    end
-
-    if mode == 'everyone' then
-        local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            out[#out + 1] = xPlayer.source
-        end
-        return out
-    end
-
-    if mode == 'nearby' then
-        local radius = clamp(target.radius, CFG.limits.radius, CFG.defaults.radius)
-        local adminPed = GetPlayerPed(adminSrc)
-        if adminPed == 0 then return nil, 'Could not locate you in the world.' end
-        local origin = GetEntityCoords(adminPed)
-        local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            local ped = GetPlayerPed(xPlayer.source)
-            if ped ~= 0 and #(GetEntityCoords(ped) - origin) <= radius then
-                out[#out + 1] = xPlayer.source
-            end
-        end
-        return out
-    end
-
-    return nil, 'Unknown target mode.'
-end
-
-local function describeTarget(target, count)
-    local mode = target and target.mode or 'self'
-    if mode == 'self' then return 'themselves' end
-    if mode == 'id' then return ('player %s'):format(target.id) end
-    if mode == 'everyone' then return ('everyone online (%d)'):format(count) end
-    if mode == 'nearby' then return ('%d nearby player(s)'):format(count) end
-    return 'unknown'
-end
-
------------------------------------------------------------------------------
 -- Give weapon
 -----------------------------------------------------------------------------
 
@@ -220,9 +150,9 @@ lib.callback.register('rc_admin_menu:weapons:give', function(src, payload)
     local weapon = weaponSet[payload.weapon]
     if not weapon then return { success = false, message = 'Unknown weapon.' } end
 
-    local quantity   = clamp(payload.quantity, CFG.limits.quantity, CFG.defaults.quantity)
-    local durability = clamp(payload.durability, CFG.limits.durability, CFG.defaults.durability)
-    local ammo       = weapon.takesAmmo and clamp(payload.ammo, CFG.limits.ammo, CFG.defaults.ammo) or 0
+    local quantity   = Admin.clamp(payload.quantity, CFG.limits.quantity, CFG.defaults.quantity)
+    local durability = Admin.clamp(payload.durability, CFG.limits.durability, CFG.defaults.durability)
+    local ammo       = weapon.takesAmmo and Admin.clamp(payload.ammo, CFG.limits.ammo, CFG.defaults.ammo) or 0
 
     -- validate requested attachments against the catalog
     local components = {}
@@ -232,7 +162,7 @@ lib.callback.register('rc_admin_menu:weapons:give', function(src, payload)
         end
     end
 
-    local targets, err = resolveTargets(src, payload.target)
+    local targets, err = Admin.resolveTargets(src, payload.target, CFG.limits.radius)
     if not targets then return { success = false, message = err } end
     if #targets == 0 then return { success = false, message = 'No valid targets.' } end
 
@@ -268,11 +198,11 @@ lib.callback.register('rc_admin_menu:weapons:give', function(src, payload)
     Admin.log('Weapon Spawned', src,
         ('Gave %dx %s (ammo %d, durability %d%%, %d attachment(s)) to %s — %d ok, %d failed')
         :format(quantity, weapon.label, ammo, durability, #components,
-            describeTarget(payload.target, #targets), given, failed),
+            Admin.describeTarget(payload.target, #targets), given, failed),
         {
             { name = 'Weapon',  value = weapon.label,                 inline = true },
             { name = 'Qty/Ammo', value = ('%d / %d'):format(quantity, ammo), inline = true },
-            { name = 'Targets', value = describeTarget(payload.target, #targets), inline = true },
+            { name = 'Targets', value = Admin.describeTarget(payload.target, #targets), inline = true },
         })
 
     if given == 0 then
@@ -280,7 +210,7 @@ lib.callback.register('rc_admin_menu:weapons:give', function(src, payload)
     end
     return {
         success = true,
-        message = ('Gave %dx %s to %s.'):format(quantity, weapon.label, describeTarget(payload.target, #targets)),
+        message = ('Gave %dx %s to %s.'):format(quantity, weapon.label, Admin.describeTarget(payload.target, #targets)),
     }
 end)
 
@@ -296,10 +226,10 @@ lib.callback.register('rc_admin_menu:weapons:giveAmmo', function(src, payload)
     local ammoItem = ammoSet[payload.ammo]
     if not ammoItem then return { success = false, message = 'Unknown ammo item.' } end
 
-    local amount = clamp(payload.amount, CFG.limits.ammo, CFG.defaults.ammo)
+    local amount = Admin.clamp(payload.amount, CFG.limits.ammo, CFG.defaults.ammo)
     if amount <= 0 then return { success = false, message = 'Amount must be greater than zero.' } end
 
-    local targets, err = resolveTargets(src, payload.target)
+    local targets, err = Admin.resolveTargets(src, payload.target, CFG.limits.radius)
     if not targets then return { success = false, message = err } end
     if #targets == 0 then return { success = false, message = 'No valid targets.' } end
 
@@ -325,14 +255,14 @@ lib.callback.register('rc_admin_menu:weapons:giveAmmo', function(src, payload)
 
     Admin.log('Ammo Spawned', src,
         ('Gave %dx %s to %s — %d ok, %d failed')
-        :format(amount, ammoItem.label, describeTarget(payload.target, #targets), given, failed))
+        :format(amount, ammoItem.label, Admin.describeTarget(payload.target, #targets), given, failed))
 
     if given == 0 then
         return { success = false, message = 'Could not give ammo (inventory full?).' }
     end
     return {
         success = true,
-        message = ('Gave %dx %s to %s.'):format(amount, ammoItem.label, describeTarget(payload.target, #targets)),
+        message = ('Gave %dx %s to %s.'):format(amount, ammoItem.label, Admin.describeTarget(payload.target, #targets)),
     }
 end)
 
@@ -348,10 +278,10 @@ lib.callback.register('rc_admin_menu:weapons:giveArmor', function(src, payload)
     local armorItem = armorSet[payload.armor]
     if not armorItem then return { success = false, message = 'Unknown armor item.' } end
 
-    local amount = clamp(payload.amount, CFG.limits.quantity, CFG.defaults.quantity)
+    local amount = Admin.clamp(payload.amount, CFG.limits.quantity, CFG.defaults.quantity)
     if amount <= 0 then return { success = false, message = 'Amount must be greater than zero.' } end
 
-    local targets, err = resolveTargets(src, payload.target)
+    local targets, err = Admin.resolveTargets(src, payload.target, CFG.limits.radius)
     if not targets then return { success = false, message = err } end
     if #targets == 0 then return { success = false, message = 'No valid targets.' } end
 
@@ -377,13 +307,13 @@ lib.callback.register('rc_admin_menu:weapons:giveArmor', function(src, payload)
 
     Admin.log('Armor Spawned', src,
         ('Gave %dx %s to %s — %d ok, %d failed')
-        :format(amount, armorItem.label, describeTarget(payload.target, #targets), given, failed))
+        :format(amount, armorItem.label, Admin.describeTarget(payload.target, #targets), given, failed))
 
     if given == 0 then
         return { success = false, message = 'Could not give armor (inventory full?).' }
     end
     return {
         success = true,
-        message = ('Gave %dx %s to %s.'):format(amount, armorItem.label, describeTarget(payload.target, #targets)),
+        message = ('Gave %dx %s to %s.'):format(amount, armorItem.label, Admin.describeTarget(payload.target, #targets)),
     }
 end)

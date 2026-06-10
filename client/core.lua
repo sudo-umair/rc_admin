@@ -42,6 +42,16 @@ function AdminToast(kind, message)
     SendNUIMessage({ action = 'toast', data = { type = kind, message = message } })
 end
 
+-- Register a NUI callback that forwards the request verbatim to the matching
+-- server callback (rc_admin_menu:<name>) and returns its result to the UI. The
+-- server validates everything; this is just the bridge.
+function AdminBridge(name)
+    RegisterNUICallback(name, function(data, cb)
+        cb(lib.callback.await('rc_admin_menu:' .. name, false, data)
+            or { success = false, message = 'Request failed.' })
+    end)
+end
+
 -----------------------------------------------------------------------------
 -- Optional keybind (relayed to the server so the group check stays authoritative)
 -----------------------------------------------------------------------------

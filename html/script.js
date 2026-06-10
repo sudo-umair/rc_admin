@@ -339,19 +339,13 @@
                 <select id="j_grade" class="select">${opts || '<option value="0">0</option>'}</select>
             </div>`;
 
-        const actions = el('div', 'modal-actions');
-        const cancel = el('button', 'btn btn-ghost', 'Cancel');
-        cancel.onclick = closeModal;
-        const setBtn = el('button', 'btn btn-primary', 'Set Job');
-        setBtn.onclick = async () => {
-            setBtn.disabled = true;
-            const grade = parseInt($('#j_grade', m).value, 10) || 0;
-            const r = await post('jobs:set', { target: targetPayload(), job: job.name, grade });
-            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
-            else { toast('error', (r && r.message) || 'Failed.'); setBtn.disabled = false; }
-        };
-        actions.appendChild(cancel); actions.appendChild(setBtn);
-        m.appendChild(actions);
+        buildModalActions(m, {
+            label: 'Set Job',
+            onSubmit: () => {
+                const grade = parseInt($('#j_grade', m).value, 10) || 0;
+                return post('jobs:set', { target: targetPayload(), job: job.name, grade });
+            },
+        });
         showModal(m);
     }
 
@@ -418,27 +412,19 @@
                 <input type="number" id="mo_amt" value="" placeholder="0" min="0" max="${aLim.max}">
             </div>`;
 
-        const actions = el('div', 'modal-actions');
-        const cancel = el('button', 'btn btn-ghost', 'Cancel');
-        cancel.onclick = closeModal;
-        const apply = el('button', 'btn btn-primary', 'Apply');
+        const apply = buildModalActions(m, {
+            onSubmit: () => {
+                const operation = $('#mo_op', m).value;
+                const amount = parseInt($('#mo_amt', m).value, 10) || 0;
+                return post('money:set', {
+                    target: targetPayload(), account: account.name, operation, amount,
+                });
+            },
+        });
 
         function syncLabel() {
             apply.textContent = MONEY_OP_VERB[$('#mo_op', m).value] || 'Apply';
         }
-
-        apply.onclick = async () => {
-            apply.disabled = true;
-            const operation = $('#mo_op', m).value;
-            const amount = parseInt($('#mo_amt', m).value, 10) || 0;
-            const r = await post('money:set', {
-                target: targetPayload(), account: account.name, operation, amount,
-            });
-            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
-            else { toast('error', (r && r.message) || 'Failed.'); apply.disabled = false; }
-        };
-        actions.appendChild(cancel); actions.appendChild(apply);
-        m.appendChild(actions);
         showModal(m);
         $('#mo_op', m).onchange = syncLabel;
         syncLabel();
@@ -521,26 +507,17 @@
             m.appendChild(f);
         }
 
-        const actions = el('div', 'modal-actions');
-        const cancel = el('button', 'btn btn-ghost', 'Cancel');
-        cancel.onclick = closeModal;
-        const give = el('button', 'btn btn-primary', 'Give Weapon');
-        give.onclick = async () => {
-            give.disabled = true;
-            const payload = {
+        buildModalActions(m, {
+            label: 'Give Weapon',
+            onSubmit: () => post('weapons:give', {
                 target: targetPayload(),
                 weapon: weapon.name,
                 quantity: parseInt($('#m_qty', m).value, 10) || 1,
                 ammo: weapon.takesAmmo ? (parseInt($('#m_ammo', m).value, 10) || 0) : 0,
                 durability: parseInt($('#m_dur', m).value, 10) || 100,
                 components: Array.from(selected),
-            };
-            const r = await post('weapons:give', payload);
-            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
-            else { toast('error', (r && r.message) || 'Failed.'); give.disabled = false; }
-        };
-        actions.appendChild(cancel); actions.appendChild(give);
-        m.appendChild(actions);
+            }),
+        });
 
         showModal(m);
         const dur = $('#m_dur', m), durVal = $('#m_dur_val', m);
@@ -562,22 +539,14 @@
                 <label>Amount</label>
                 <input type="number" id="a_amt" value="${defaults.ammo || 0}" min="1" max="${aLim.max}">
             </div>`;
-        const actions = el('div', 'modal-actions');
-        const cancel = el('button', 'btn btn-ghost', 'Cancel');
-        cancel.onclick = closeModal;
-        const give = el('button', 'btn btn-primary', 'Give Ammo');
-        give.onclick = async () => {
-            give.disabled = true;
-            const r = await post('weapons:giveAmmo', {
+        buildModalActions(m, {
+            label: 'Give Ammo',
+            onSubmit: () => post('weapons:giveAmmo', {
                 target: targetPayload(),
                 ammo: ammo.name,
                 amount: parseInt($('#a_amt', m).value, 10) || 0,
-            });
-            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
-            else { toast('error', (r && r.message) || 'Failed.'); give.disabled = false; }
-        };
-        actions.appendChild(cancel); actions.appendChild(give);
-        m.appendChild(actions);
+            }),
+        });
         showModal(m);
     }
 
@@ -596,23 +565,35 @@
                 <label>Quantity</label>
                 <input type="number" id="ar_qty" value="${defaults.quantity || 1}" min="${qLim.min}" max="${qLim.max}">
             </div>`;
-        const actions = el('div', 'modal-actions');
-        const cancel = el('button', 'btn btn-ghost', 'Cancel');
-        cancel.onclick = closeModal;
-        const give = el('button', 'btn btn-primary', 'Give Armor');
-        give.onclick = async () => {
-            give.disabled = true;
-            const r = await post('weapons:giveArmor', {
+        buildModalActions(m, {
+            label: 'Give Armor',
+            onSubmit: () => post('weapons:giveArmor', {
                 target: targetPayload(),
                 armor: armor.name,
                 amount: parseInt($('#ar_qty', m).value, 10) || 1,
-            });
-            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
-            else { toast('error', (r && r.message) || 'Failed.'); give.disabled = false; }
-        };
-        actions.appendChild(cancel); actions.appendChild(give);
-        m.appendChild(actions);
+            }),
+        });
         showModal(m);
+    }
+
+    // Append a Cancel + primary-action button row to a modal node.
+    // opts.onSubmit() runs on click with the primary button already disabled and
+    // should return the post() result. On success the modal closes; on failure
+    // the button is re-enabled and the error toast shown. Returns the button.
+    function buildModalActions(m, opts) {
+        const actions = el('div', 'modal-actions');
+        const cancel = el('button', 'btn btn-ghost', 'Cancel');
+        cancel.onclick = closeModal;
+        const submit = el('button', 'btn btn-primary', opts.label || 'Apply');
+        submit.onclick = async () => {
+            submit.disabled = true;
+            const r = await opts.onSubmit(submit);
+            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
+            else { toast('error', (r && r.message) || 'Failed.'); submit.disabled = false; }
+        };
+        actions.appendChild(cancel); actions.appendChild(submit);
+        m.appendChild(actions);
+        return submit;
     }
 
     // ============================ modal host ============================

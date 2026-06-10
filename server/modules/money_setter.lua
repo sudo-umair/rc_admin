@@ -53,75 +53,6 @@ Admin.registerModule({
 })
 
 -----------------------------------------------------------------------------
--- Targeting — resolve a target descriptor into a list of player sources.
--- target = { mode = 'self'|'id'|'nearby'|'everyone', id = number, radius = number }
--- nearby/everyone are gated to ElevatedGroups. Returns (sources[], errorMessage).
------------------------------------------------------------------------------
-
-local function clamp(v, lim, fallback)
-    v = tonumber(v)
-    if not v then return fallback end
-    if v < lim.min then return lim.min end
-    if v > lim.max then return lim.max end
-    return v
-end
-
-local function resolveTargets(adminSrc, target)
-    local mode = target and target.mode or 'self'
-
-    if mode == 'self' then
-        return { adminSrc }
-    end
-
-    if mode == 'id' then
-        local id = tonumber(target.id)
-        if not id then return nil, 'Invalid server ID.' end
-        if not ESX.GetPlayerFromId(id) then
-            return nil, ('No online player with server ID %s.'):format(id)
-        end
-        return { id }
-    end
-
-    if not Admin.isElevated(adminSrc) then
-        return nil, 'You are not authorized for that target.'
-    end
-
-    if mode == 'everyone' then
-        local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            out[#out + 1] = xPlayer.source
-        end
-        return out
-    end
-
-    if mode == 'nearby' then
-        local radius = clamp(target.radius, CFG.radius, CFG.radius.default)
-        local adminPed = GetPlayerPed(adminSrc)
-        if adminPed == 0 then return nil, 'Could not locate you in the world.' end
-        local origin = GetEntityCoords(adminPed)
-        local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            local ped = GetPlayerPed(xPlayer.source)
-            if ped ~= 0 and #(GetEntityCoords(ped) - origin) <= radius then
-                out[#out + 1] = xPlayer.source
-            end
-        end
-        return out
-    end
-
-    return nil, 'Unknown target mode.'
-end
-
-local function describeTarget(target, count)
-    local mode = target and target.mode or 'self'
-    if mode == 'self' then return 'themselves' end
-    if mode == 'id' then return ('player %s'):format(target.id) end
-    if mode == 'everyone' then return ('everyone online (%d)'):format(count) end
-    if mode == 'nearby' then return ('%d nearby player(s)'):format(count) end
-    return 'unknown'
-end
-
------------------------------------------------------------------------------
 -- Apply a money operation (add / remove / set) on one player. Returns true on
 -- success. `remove` is capped at the player's current balance so it can never
 -- push an account negative.
@@ -182,7 +113,7 @@ lib.callback.register('rc_admin_menu:money:set', function(src, payload)
         return { success = false, message = ('Amount must be at least $%s.'):format(fmtMoney(lim.min)) }
     end
 
-    local targets, err = resolveTargets(src, payload.target)
+    local targets, err = Admin.resolveTargets(src, payload.target, CFG.radius)
     if not targets then return { success = false, message = err } end
     if #targets == 0 then return { success = false, message = 'No valid targets.' } end
 
@@ -207,12 +138,12 @@ lib.callback.register('rc_admin_menu:money:set', function(src, payload)
 
     Admin.log('Money Changed', src,
         ('%s for %s — %d ok, %d failed')
-        :format(phrase, describeTarget(payload.target, #targets), done, failed),
+        :format(phrase, Admin.describeTarget(payload.target, #targets), done, failed),
         {
             { name = 'Operation', value = verb,                                     inline = true },
             { name = 'Account',   value = accountLabel,                             inline = true },
             { name = 'Amount',    value = ('$%s'):format(fmtMoney(amount)),         inline = true },
-            { name = 'Targets',   value = describeTarget(payload.target, #targets), inline = true },
+            { name = 'Targets',   value = Admin.describeTarget(payload.target, #targets), inline = true },
         })
 
     if done == 0 then
@@ -220,6 +151,6 @@ lib.callback.register('rc_admin_menu:money:set', function(src, payload)
     end
     return {
         success = true,
-        message = ('%s for %s.'):format(phrase, describeTarget(payload.target, #targets)),
+        message = ('%s for %s.'):format(phrase, Admin.describeTarget(payload.target, #targets)),
     }
 end)

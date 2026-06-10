@@ -44,6 +44,79 @@ function Admin.notify(src, msg, ntype, title)
 end
 
 -----------------------------------------------------------------------------
+-- Targeting — shared by every feature module.
+-- Resolve a target descriptor into a list of player sources.
+--   target    = { mode = 'self'|'id'|'nearby'|'everyone', id = number, radius = number }
+--   radiusLim = { min, max, default } — clamps the "nearby" radius (each module
+--               passes its own config, since the field names differ).
+-- nearby/everyone are gated to ElevatedGroups. Returns (sources[], errorMessage).
+-----------------------------------------------------------------------------
+
+function Admin.clamp(v, lim, fallback)
+    v = tonumber(v)
+    if not v then return fallback end
+    if v < lim.min then return lim.min end
+    if v > lim.max then return lim.max end
+    return v
+end
+
+function Admin.resolveTargets(adminSrc, target, radiusLim)
+    local mode = target and target.mode or 'self'
+
+    if mode == 'self' then
+        return { adminSrc }
+    end
+
+    if mode == 'id' then
+        local id = tonumber(target.id)
+        if not id then return nil, 'Invalid server ID.' end
+        if not ESX.GetPlayerFromId(id) then
+            return nil, ('No online player with server ID %s.'):format(id)
+        end
+        return { id }
+    end
+
+    -- elevated-only modes
+    if not Admin.isElevated(adminSrc) then
+        return nil, 'You are not authorized for that target.'
+    end
+
+    if mode == 'everyone' then
+        local out = {}
+        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+            out[#out + 1] = xPlayer.source
+        end
+        return out
+    end
+
+    if mode == 'nearby' then
+        local radius = Admin.clamp(target.radius, radiusLim, radiusLim.default)
+        local adminPed = GetPlayerPed(adminSrc)
+        if adminPed == 0 then return nil, 'Could not locate you in the world.' end
+        local origin = GetEntityCoords(adminPed)
+        local out = {}
+        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
+            local ped = GetPlayerPed(xPlayer.source)
+            if ped ~= 0 and #(GetEntityCoords(ped) - origin) <= radius then
+                out[#out + 1] = xPlayer.source
+            end
+        end
+        return out
+    end
+
+    return nil, 'Unknown target mode.'
+end
+
+function Admin.describeTarget(target, count)
+    local mode = target and target.mode or 'self'
+    if mode == 'self' then return 'themselves' end
+    if mode == 'id' then return ('player %s'):format(target.id) end
+    if mode == 'everyone' then return ('everyone online (%d)'):format(count) end
+    if mode == 'nearby' then return ('%d nearby player(s)'):format(count) end
+    return 'unknown'
+end
+
+-----------------------------------------------------------------------------
 -- Logging (console + optional Discord webhook)
 -----------------------------------------------------------------------------
 
