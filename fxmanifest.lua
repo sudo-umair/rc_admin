@@ -16,13 +16,15 @@ shared_scripts {
 client_scripts {
     'client/core.lua',
     'client/modules/weapon_spawner.lua',
-    'client/modules/job_setter.lua'
+    'client/modules/job_setter.lua',
+    'client/modules/money_setter.lua'
 }
 
 server_scripts {
     'server/core.lua',
     'server/modules/weapon_spawner.lua',
-    'server/modules/job_setter.lua'
+    'server/modules/job_setter.lua',
+    'server/modules/money_setter.lua'
 }
 
 ui_page 'html/index.html'

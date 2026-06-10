@@ -355,6 +355,95 @@
         showModal(m);
     }
 
+    // ============================ money manager module ============================
+
+    const MONEY_OP_LABELS = { add: 'Add', remove: 'Remove', set: 'Set' };
+    const MONEY_OP_VERB = { add: 'Give Money', remove: 'Take Money', set: 'Set Balance' };
+
+    RENDERERS.money_setter = function (root, mod) {
+        const data = mod.data || {};
+        const accounts = data.accounts || [];
+        const operations = data.operations || ['add'];
+        const limits = data.limits || {};
+        const radiusCfg = data.radius || {};
+        state.target.radius = radiusCfg.default || 20;
+
+        const head = el('div', 'content-head');
+        head.innerHTML = `<h1>Manage Money</h1><p>Add, remove or set player account balances.</p>`;
+        root.appendChild(head);
+
+        const body = el('div', 'content-body');
+        root.appendChild(body);
+
+        buildTargetBar(body, { label: 'Apply to', radius: radiusCfg.default || 20 });
+
+        const grid = el('div', 'grid');
+        body.appendChild(grid);
+
+        if (!accounts.length) {
+            grid.appendChild(el('div', 'empty', 'No accounts configured.'));
+            return;
+        }
+
+        accounts.forEach((a) => {
+            const card = el('div', 'card');
+            card.innerHTML =
+                `<div class="card-info">
+                    <div class="card-label">${esc(a.label)}</div>
+                    <div class="card-name">${esc(a.name)}</div>
+                </div>
+                <span class="card-give">$</span>`;
+            card.onclick = () => openMoneyModal(a, operations, limits);
+            grid.appendChild(card);
+        });
+    };
+
+    function openMoneyModal(account, operations, limits) {
+        if (!validateTarget()) return;
+        const aLim = (limits && limits.amount) || { min: 1, max: 10000000 };
+        const opOpts = operations.map((o) =>
+            `<option value="${esc(o)}">${esc(MONEY_OP_LABELS[o] || o)}</option>`).join('');
+
+        const m = el('div');
+        m.innerHTML = `
+            <div class="modal-head">
+                <div><h2>${esc(account.label)}</h2><div class="sub">${esc(account.name)}</div></div>
+            </div>
+            <div class="field">
+                <label>Operation</label>
+                <select id="mo_op" class="select">${opOpts || '<option value="add">Add</option>'}</select>
+            </div>
+            <div class="field">
+                <label>Amount ($)</label>
+                <input type="number" id="mo_amt" value="" placeholder="0" min="0" max="${aLim.max}">
+            </div>`;
+
+        const actions = el('div', 'modal-actions');
+        const cancel = el('button', 'btn btn-ghost', 'Cancel');
+        cancel.onclick = closeModal;
+        const apply = el('button', 'btn btn-primary', 'Apply');
+
+        function syncLabel() {
+            apply.textContent = MONEY_OP_VERB[$('#mo_op', m).value] || 'Apply';
+        }
+
+        apply.onclick = async () => {
+            apply.disabled = true;
+            const operation = $('#mo_op', m).value;
+            const amount = parseInt($('#mo_amt', m).value, 10) || 0;
+            const r = await post('money:set', {
+                target: targetPayload(), account: account.name, operation, amount,
+            });
+            if (r && r.success) { toast('success', r.message || 'Done.'); closeModal(); }
+            else { toast('error', (r && r.message) || 'Failed.'); apply.disabled = false; }
+        };
+        actions.appendChild(cancel); actions.appendChild(apply);
+        m.appendChild(actions);
+        showModal(m);
+        $('#mo_op', m).onchange = syncLabel;
+        syncLabel();
+    }
+
     // ----------------------- give weapon modal -----------------------
 
     function targetPayload() {

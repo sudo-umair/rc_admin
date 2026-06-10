@@ -73,6 +73,33 @@ Limits (quantity, ammo, durability, nearby radius) are enforced server-side via
 
 ---
 
+## Money Manager
+
+1. Pick a **target** (Myself · Player ID · Nearby · Everyone — the last two are
+   elevated-only, same as every module).
+2. Click an **account** (Cash, Bank, Black Money by default).
+3. Choose an **operation** and amount:
+   - **Add** — add to the balance.
+   - **Remove** — subtract from the balance (capped at the current balance, so
+     it never goes negative).
+   - **Set** — set the balance to an exact value.
+
+Accounts, the allowed operations, and the amount clamp are configured in
+`Config.MoneySetter`:
+
+```lua
+Config.MoneySetter = {
+    accounts   = { { name = 'money', label = 'Cash' }, { name = 'bank', label = 'Bank' }, ... },
+    operations = { 'add', 'remove', 'set' },
+    limits     = { amount = { min = 1, max = 10000000 } },  -- 'set' allows 0
+}
+```
+
+Amounts are validated and clamped **server-side** before any ESX account call,
+and — like weapon grants — every change is logged (`Config.Logging`).
+
+---
+
 ## Logging
 
 Every grant is recorded (`Config.Logging`):

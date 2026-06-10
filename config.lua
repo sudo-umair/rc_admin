@@ -100,3 +100,35 @@ Config.WeaponSpawner = {
         radius     = 20,
     },
 }
+
+-----------------------------------------------------------------------------
+-- Money Manager module
+-- Adjusting balances is abuse-sensitive, so every change is logged like
+-- weapon grants (Config.Logging).
+-----------------------------------------------------------------------------
+
+Config.MoneySetter = {
+    enabled = true,
+
+    -- Accounts exposed in the panel. `name` is the ESX account id, `label`
+    -- the display name. Remove any account you don't want admins touching.
+    accounts = {
+        { name = 'money',       label = 'Cash'        },
+        { name = 'bank',        label = 'Bank'        },
+        { name = 'black_money', label = 'Black Money' },
+    },
+
+    -- Operations admins may perform (shown in the dialog dropdown):
+    --   'add'    : add to the balance (give)
+    --   'remove' : subtract from the balance (capped at the current balance)
+    --   'set'    : set the balance to an exact value
+    operations = { 'add', 'remove', 'set' },
+
+    -- Server-enforced amount clamp. 'add'/'remove' require at least `min`;
+    -- 'set' allows 0. Values above `max` are clamped down.
+    limits = { amount = { min = 1, max = 10000000 } },
+
+    -- "Nearby" radius limits/default (metres). Setting money for nearby or
+    -- everyone online is gated to Config.ElevatedGroups.
+    radius = { min = 1, max = 100, default = 20 },
+}
