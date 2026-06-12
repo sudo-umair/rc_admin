@@ -1,10 +1,10 @@
 # rc_admin_menu
 
-A modular, admin-only toolkit for ESX Legacy with a custom NUI panel. Features
+A modular, admin-only toolkit for ESX Legacy & QBCore with a custom NUI panel. Features
 are built as self-contained **modules** so new tools can be added without
 touching the existing ones. The first module is a **Weapon Spawner**.
 
-- **Framework:** ESX Legacy (`es_extended`)
+- **Framework:** ESX Legacy (`es_extended`) **or** QBCore (`qb-core`) — auto-detected; set `Config.Framework` to force one
 - **UI / utils:** `ox_lib` (callbacks, notifications, keybind)
 - **Inventory:** `ox_inventory` (weapons, ammo and attachments are items)
 
@@ -16,8 +16,9 @@ touching the existing ones. The first module is a **Weapon Spawner**.
 - Optional keybind: set `Config.OpenKey` (e.g. `'F6'`); players can rebind it
   under **Settings → Key Bindings → FiveM**.
 
-Access is checked **server-side** against the ESX `users.group` on every open
-and every action — the client never decides who is an admin.
+Access is checked **server-side** against the framework groups (ESX `users.group`
+or QBCore permission levels) on every open and every action — the client never
+decides who is an admin.
 
 ---
 
@@ -95,7 +96,7 @@ Config.MoneySetter = {
 }
 ```
 
-Amounts are validated and clamped **server-side** before any ESX account call,
+Amounts are validated and clamped **server-side** before any framework account call,
 and — like weapon grants — every change is logged (`Config.Logging`).
 
 ---

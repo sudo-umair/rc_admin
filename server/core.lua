@@ -1,33 +1,18 @@
-local ESX = exports['es_extended']:getSharedObject()
-
 -- Shared table for feature modules (all server scripts share one Lua state,
 -- and core.lua is loaded before the modules in fxmanifest.lua).
 Admin = {}
 
 -----------------------------------------------------------------------------
--- Permissions (ESX `users.group`) — enforced server-side on every action.
+-- Permissions (framework groups via the bridge) — enforced server-side on
+-- every action.
 -----------------------------------------------------------------------------
 
-local function inList(value, list)
-    for _, v in ipairs(list) do
-        if v == value then return true end
-    end
-    return false
-end
-
-function Admin.getGroup(src)
-    local xPlayer = ESX.GetPlayerFromId(src)
-    return xPlayer and xPlayer.getGroup() or nil
-end
-
 function Admin.isAdmin(src)
-    local g = Admin.getGroup(src)
-    return g ~= nil and inList(g, Config.AdminGroups)
+    return Bridge.IsInAnyGroup(src, Config.AdminGroups)
 end
 
 function Admin.isElevated(src)
-    local g = Admin.getGroup(src)
-    return g ~= nil and inList(g, Config.ElevatedGroups)
+    return Bridge.IsInAnyGroup(src, Config.ElevatedGroups)
 end
 
 -----------------------------------------------------------------------------
@@ -70,7 +55,7 @@ function Admin.resolveTargets(adminSrc, target, radiusLim)
     if mode == 'id' then
         local id = tonumber(target.id)
         if not id then return nil, 'Invalid server ID.' end
-        if not ESX.GetPlayerFromId(id) then
+        if not Bridge.PlayerExists(id) then
             return nil, ('No online player with server ID %s.'):format(id)
         end
         return { id }
@@ -82,11 +67,7 @@ function Admin.resolveTargets(adminSrc, target, radiusLim)
     end
 
     if mode == 'everyone' then
-        local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            out[#out + 1] = xPlayer.source
-        end
-        return out
+        return Bridge.GetOnlinePlayers()
     end
 
     if mode == 'nearby' then
@@ -95,10 +76,10 @@ function Admin.resolveTargets(adminSrc, target, radiusLim)
         if adminPed == 0 then return nil, 'Could not locate you in the world.' end
         local origin = GetEntityCoords(adminPed)
         local out = {}
-        for _, xPlayer in pairs(ESX.GetExtendedPlayers()) do
-            local ped = GetPlayerPed(xPlayer.source)
+        for _, playerSrc in ipairs(Bridge.GetOnlinePlayers()) do
+            local ped = GetPlayerPed(playerSrc)
             if ped ~= 0 and #(GetEntityCoords(ped) - origin) <= radius then
-                out[#out + 1] = xPlayer.source
+                out[#out + 1] = playerSrc
             end
         end
         return out
@@ -215,13 +196,13 @@ lib.callback.register('rc_admin_menu:resolvePlayer', function(src, id)
     if not Admin.isAdmin(src) then return false end
     id = tonumber(id)
     if not id then return false end
-    local xPlayer = ESX.GetPlayerFromId(id)
-    if not xPlayer then return false end
-    return { id = id, name = xPlayer.getName(), account = GetPlayerName(id) }
+    local name = Bridge.GetCharacterName(id)
+    if not name then return false end
+    return { id = id, name = name, account = GetPlayerName(id) }
 end)
 
 -----------------------------------------------------------------------------
--- /checkgroup [id] — read-only lookup of a player's ESX group.
+-- /checkgroup [id] — read-only lookup of a player's framework group.
 -- From the server console: `checkgroup <id>` (prints the result).
 -- In-game: admins only; omit the id to check yourself.
 -----------------------------------------------------------------------------
@@ -234,8 +215,7 @@ RegisterCommand('checkgroup', function(source, args)
             print('[rc_admin_menu] usage: checkgroup <server id>')
             return
         end
-        local xPlayer = ESX.GetPlayerFromId(id)
-        print(('[rc_admin_menu] [%d] group = %s'):format(id, xPlayer and xPlayer.getGroup() or 'not found / offline'))
+        print(('[rc_admin_menu] [%d] group = %s'):format(id, Bridge.GetGroupDisplay(id) or 'not found / offline'))
         return
     end
 
@@ -245,12 +225,11 @@ RegisterCommand('checkgroup', function(source, args)
     end
 
     id = id or source
-    local xPlayer = ESX.GetPlayerFromId(id)
-    if not xPlayer then
+    if not Bridge.PlayerExists(id) then
         Admin.notify(source, ('No online player with ID %s.'):format(id), 'error', 'Check Group')
         return
     end
     Admin.notify(source,
-        ('[%d] %s — group: %s'):format(id, xPlayer.getName(), xPlayer.getGroup()),
+        ('[%d] %s — group: %s'):format(id, Bridge.GetCharacterName(id) or GetPlayerName(id), Bridge.GetGroupDisplay(id) or 'none'),
         'inform', 'Check Group')
 end, false)

@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 name 'rc_admin_menu'
-description 'ESX modular admin toolkit — a central admin menu with pluggable feature modules. First module: weapon/ammo/attachment spawner (ox_inventory).'
+description 'Modular admin toolkit for ESX & QBCore — a central admin menu with pluggable feature modules. First module: weapon/ammo/attachment spawner (ox_inventory).'
 author 'sudo-umair'
 version '1.0.0'
 
@@ -21,6 +21,7 @@ client_scripts {
 }
 
 server_scripts {
+    'bridge/server.lua',
     'server/core.lua',
     'server/modules/weapon_spawner.lua',
     'server/modules/job_setter.lua',
@@ -37,7 +38,6 @@ files {
 }
 
 dependencies {
-    'es_extended',
     'ox_lib',
     'ox_inventory'
 }

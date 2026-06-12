@@ -271,7 +271,7 @@
         state.target.radius = radiusCfg.default || 20;
 
         const head = el('div', 'content-head');
-        head.innerHTML = `<h1>Set Job</h1><p>Assign an ESX job &amp; grade to players.</p>`;
+        head.innerHTML = `<h1>Set Job</h1><p>Assign a job &amp; grade to players.</p>`;
         root.appendChild(head);
 
         const body = el('div', 'content-body');

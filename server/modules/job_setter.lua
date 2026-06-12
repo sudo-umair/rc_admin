@@ -1,10 +1,9 @@
-local ESX = exports['es_extended']:getSharedObject()
 local CFG = Config.JobSetter or { enabled = true, radius = { min = 1, max = 100, default = 20 } }
 
 if not CFG.enabled then return end
 
 -----------------------------------------------------------------------------
--- Job catalog — built from ESX.GetJobs() and cached.
+-- Job catalog — built from Bridge.GetJobs() and cached.
 -- jobs:   { name, label, grades = { { grade, label, salary } } }
 -- jobSet: name -> { entry, grades = { [gradeNumber] = true } } for fast validation
 -----------------------------------------------------------------------------
@@ -13,22 +12,15 @@ local catalog
 local jobSet
 
 local function buildCatalog()
-    local jobs = ESX.GetJobs() or {}
+    local jobs = Bridge.GetJobs()
     local list = {}
     jobSet = {}
 
     for name, job in pairs(jobs) do
-        local grades = {}
-        for gradeKey, g in pairs(job.grades or {}) do
-            grades[#grades + 1] = {
-                grade  = tonumber(g.grade) or tonumber(gradeKey) or 0,
-                label  = g.label or g.name or ('Grade ' .. tostring(gradeKey)),
-                salary = g.salary,
-            }
-        end
+        local grades = job.grades
         table.sort(grades, function(a, b) return a.grade < b.grade end)
 
-        local entry = { name = name, label = job.label or name, grades = grades }
+        local entry = { name = name, label = job.label, grades = grades }
         list[#list + 1] = entry
 
         local gset = {}
@@ -45,11 +37,13 @@ local function buildCatalog()
 end
 
 local function getCatalog()
-    if not catalog then buildCatalog() end
+    -- rebuild while empty: the framework (and its job registry) may not have
+    -- been detected yet when the deferred first build ran
+    if not catalog or #catalog.jobs == 0 then buildCatalog() end
     return catalog
 end
 
--- ESX jobs aren't loaded the instant the resource starts; defer the first build.
+-- framework jobs aren't loaded the instant the resource starts; defer the first build.
 CreateThread(function()
     Wait(1000)
     buildCatalog()
@@ -91,16 +85,11 @@ lib.callback.register('rc_admin_menu:jobs:set', function(src, payload)
     local jobLabel = jdef.entry.label
     local done, failed = 0, 0
     for _, targetSrc in ipairs(targets) do
-        local xPlayer = ESX.GetPlayerFromId(targetSrc)
-        if xPlayer then
-            local ok = pcall(function() xPlayer.setJob(payload.job, grade) end)
-            if ok then
-                done = done + 1
-                if targetSrc ~= src then
-                    Admin.notify(targetSrc, ('Your job was set to %s by an admin.'):format(jobLabel), 'inform')
-                end
-            else
-                failed = failed + 1
+        local ok, result = pcall(Bridge.SetJob, targetSrc, payload.job, grade)
+        if ok and result then
+            done = done + 1
+            if targetSrc ~= src then
+                Admin.notify(targetSrc, ('Your job was set to %s by an admin.'):format(jobLabel), 'inform')
             end
         else
             failed = failed + 1

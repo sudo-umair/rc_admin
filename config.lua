@@ -4,6 +4,7 @@ Config = {}
 -- General
 -----------------------------------------------------------------------------
 
+Config.Framework = 'auto' -- 'auto' | 'esx' | 'qb' — which framework to bind to ('auto' detects whichever is running)
 Config.Debug = false      -- print diagnostics to server & client (F8) consoles
 
 -- How the admin hub is opened.
@@ -12,7 +13,7 @@ Config.OpenKey = ''       -- optional keybind (e.g. 'F6'); '' = command only
                           -- players can rebind it under Settings > Key Bindings > FiveM
 
 -----------------------------------------------------------------------------
--- Permissions (ESX `users.group`)
+-- Permissions (ESX `users.group` / QBCore permission levels)
 -- These are checked SERVER-SIDE on every action — the client never decides.
 --
 -- AdminGroups    : may open the hub and use standard actions
@@ -21,8 +22,14 @@ Config.OpenKey = ''       -- optional keybind (e.g. 'F6'); '' = command only
 --                  (give to EVERYONE online, give to NEARBY players).
 -----------------------------------------------------------------------------
 
-Config.AdminGroups    = { 'admin', 'developer' }
-Config.ElevatedGroups = { 'admin', 'developer' }
+Config.AdminGroups = {
+    esx = { 'admin', 'developer' },
+    qb  = { 'admin', 'god' },
+}
+Config.ElevatedGroups = {
+    esx = { 'admin', 'developer' },
+    qb  = { 'admin', 'god' },
+}
 
 -----------------------------------------------------------------------------
 -- Logging (admin actions)
@@ -110,12 +117,20 @@ Config.WeaponSpawner = {
 Config.MoneySetter = {
     enabled = true,
 
-    -- Accounts exposed in the panel. `name` is the ESX account id, `label`
-    -- the display name. Remove any account you don't want admins touching.
+    -- Accounts exposed in the panel, per framework. `name` is the framework's
+    -- account id, `label` the display name. Remove any account you don't want
+    -- admins touching.
     accounts = {
-        { name = 'money',       label = 'Cash'        },
-        { name = 'bank',        label = 'Bank'        },
-        { name = 'black_money', label = 'Black Money' },
+        esx = {
+            { name = 'money',       label = 'Cash'        },
+            { name = 'bank',        label = 'Bank'        },
+            { name = 'black_money', label = 'Black Money' },
+        },
+        qb = {
+            { name = 'cash',   label = 'Cash'   },
+            { name = 'bank',   label = 'Bank'   },
+            { name = 'crypto', label = 'Crypto' },
+        },
     },
 
     -- Operations admins may perform (shown in the dialog dropdown):

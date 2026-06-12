@@ -1,4 +1,3 @@
-local ESX = exports['es_extended']:getSharedObject()
 local CFG = Config.WeaponSpawner
 
 if not CFG.enabled then return end

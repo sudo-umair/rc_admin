@@ -1,7 +1,6 @@
-local ESX = exports['es_extended']:getSharedObject()
 local CFG = Config.MoneySetter or {
     enabled = true,
-    accounts = { { name = 'money', label = 'Cash' } },
+    accounts = { esx = { { name = 'money', label = 'Cash' } }, qb = { { name = 'cash', label = 'Cash' } } },
     operations = { 'add', 'remove', 'set' },
     limits = { amount = { min = 1, max = 10000000 } },
     radius = { min = 1, max = 100, default = 20 },
@@ -11,12 +10,23 @@ if not CFG.enabled then return end
 
 -----------------------------------------------------------------------------
 -- Lookup sets built from config, for fast server-side validation.
--- accountSet : ESX account name -> display label
--- opSet      : operation name   -> true (only the configured ops are allowed)
+-- accountSet : framework account name -> display label (lazy — the account
+--              list depends on which framework the bridge detects)
+-- opSet      : operation name -> true (only the configured ops are allowed)
 -----------------------------------------------------------------------------
 
-local accountSet = {}
-for _, a in ipairs(CFG.accounts or {}) do accountSet[a.name] = a.label or a.name end
+local function getAccounts()
+    return CFG.accounts[Bridge.Framework] or {}
+end
+
+local accountSet
+local function getAccountSet()
+    if not accountSet and Bridge.Framework ~= 'none' then
+        accountSet = {}
+        for _, a in ipairs(getAccounts()) do accountSet[a.name] = a.label or a.name end
+    end
+    return accountSet or {}
+end
 
 local opSet = {}
 for _, op in ipairs(CFG.operations or {}) do opSet[op] = true end
@@ -44,7 +54,7 @@ Admin.registerModule({
     icon  = '💵',
     getContext = function()
         return {
-            accounts   = CFG.accounts,
+            accounts   = getAccounts(),
             operations = CFG.operations,
             limits     = CFG.limits,
             radius     = CFG.radius,
@@ -59,20 +69,20 @@ Admin.registerModule({
 -----------------------------------------------------------------------------
 
 local function applyMoney(targetSrc, account, op, amount, accountLabel, isSelf)
-    local xPlayer = ESX.GetPlayerFromId(targetSrc)
-    if not xPlayer then return false end
+    if not Bridge.PlayerExists(targetSrc) then return false end
 
-    local ok = pcall(function()
+    local ok, result = pcall(function()
         if op == 'add' then
-            xPlayer.addAccountMoney(account, amount)
+            return Bridge.AddMoney(targetSrc, account, amount)
         elseif op == 'set' then
-            xPlayer.setAccountMoney(account, amount)
+            return Bridge.SetMoney(targetSrc, account, amount)
         else -- remove
-            local acc = xPlayer.getAccount(account)
-            local take = math.min(amount, (acc and acc.money) or 0)
-            if take > 0 then xPlayer.removeAccountMoney(account, take) end
+            local take = math.min(amount, Bridge.GetMoney(targetSrc, account))
+            if take > 0 then return Bridge.RemoveMoney(targetSrc, account, take) end
+            return true
         end
     end)
+    ok = ok and result ~= false
 
     if ok and not isSelf then
         local msg
@@ -97,7 +107,7 @@ lib.callback.register('rc_admin_menu:money:set', function(src, payload)
     if not Admin.isAdmin(src) then return { success = false, message = 'Not authorized.' } end
     if type(payload) ~= 'table' then return { success = false, message = 'Bad request.' } end
 
-    local accountLabel = accountSet[payload.account]
+    local accountLabel = getAccountSet()[payload.account]
     if not accountLabel then return { success = false, message = 'Unknown account.' } end
 
     local op = payload.operation
